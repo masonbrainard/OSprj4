@@ -95,7 +95,9 @@ void Simulation::run()
 void Simulation::handle_thread_arrived(const std::shared_ptr<Event> event)
 {
     // TODO: Handle this event properly
-    std::cout << "TODO: Handle thread arrived event properly\n\n";
+    //std::cout << "TODO: Handle thread arrived event properly\n\n";
+
+
 }
 
 void Simulation::handle_dispatch_completed(const std::shared_ptr<Event> event)

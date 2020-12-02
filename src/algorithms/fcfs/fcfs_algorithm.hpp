@@ -22,7 +22,7 @@ public:
     //==================================================
 
     // Add any member variables you may need.
-
+    std::vector<Thread> Threads;
 
     //==================================================
     //  Member functions
