@@ -7,21 +7,30 @@
 /*
     Here is where you should define the logic for the round robin algorithm.
 */
+std::queue<Thread> Threads;
 
 RRScheduler::RRScheduler(int slice) {    
     // TODO
+    
 }
 
 std::shared_ptr<SchedulingDecision> RRScheduler::get_next_thread() {
-    // TODO
-    return nullptr;
+    if(Threads.empty())
+    {
+        return nullptr;
+    }
+    else
+    {
+        Thread temp = Threads.front();
+        Threads.pop();
+        return temp;
+    }
 }
 
 void RRScheduler::add_to_ready_queue(std::shared_ptr<Thread> thread) {
-    // TODO
+    Threads.pop(thread);
 }
 
 size_t RRScheduler::size() const {
-    // TODO
-    return 0;
+    return Threads.size();
 }

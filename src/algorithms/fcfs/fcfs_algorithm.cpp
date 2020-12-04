@@ -9,12 +9,12 @@
 /*
     Here is where you should define the logic for the FCFS algorithm.
 */
-std::vector<Thread> Threads;
+std::queue<Thread> Threads;
 
 FCFSScheduler::FCFSScheduler(int slice) {
     if (slice != -1) {
         throw("FCFS must have a timeslice of -1");
-    }
+    }    
 }
 
 std::shared_ptr<SchedulingDecision> FCFSScheduler::get_next_thread() {
@@ -24,12 +24,15 @@ std::shared_ptr<SchedulingDecision> FCFSScheduler::get_next_thread() {
     }
     else
     {
-        return Threads.front;
+        Thread temp = Threads.front();
+        Threads.pop();
+        return temp;
     }
+
 }
 
 void FCFSScheduler::add_to_ready_queue(std::shared_ptr<Thread> thread) {
-    Threads.push_back(thread);
+    Threads.push(thread);
 }
 
 size_t FCFSScheduler::size() const {

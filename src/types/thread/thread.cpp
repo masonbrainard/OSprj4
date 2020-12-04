@@ -89,11 +89,29 @@ void Thread::set_state(ThreadState state, int time) {
 }
 
 std::shared_ptr<Burst> Thread::get_next_burst(BurstType type) {
-    // TODO
-    return nullptr;
+    if(bursts.empty())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return bursts.front();
+    }
 }
 
 std::shared_ptr<Burst> Thread::pop_next_burst(BurstType type) {
-    // TODO
+    if(bursts.empty())
+    {
+        throw("There aren't any bursts to pop loser.\n")
+    }
+    if(bursts.front().type != type)
+    {
+        throw("There aren't any bursts of that type to pop loser!\n")
+    }
+    else
+    {
+        bursts.pop();
+    }
+
     return nullptr;
 }
