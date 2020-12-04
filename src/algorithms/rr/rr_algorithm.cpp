@@ -10,8 +10,10 @@
 std::queue<Thread> Threads;
 
 RRScheduler::RRScheduler(int slice) {    
-    // TODO
-    
+    if (slice == -1) {
+        throw("RR must have a timeslice > -1");
+    }  
+    this->time_slice = slice;
 }
 
 std::shared_ptr<SchedulingDecision> RRScheduler::get_next_thread() {
