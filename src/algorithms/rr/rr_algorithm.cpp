@@ -7,7 +7,6 @@
 /*
     Here is where you should define the logic for the round robin algorithm.
 */
-std::queue<Thread> Threads;
 
 RRScheduler::RRScheduler(int slice) {    
     if (slice == -1) {
@@ -17,22 +16,27 @@ RRScheduler::RRScheduler(int slice) {
 }
 
 std::shared_ptr<SchedulingDecision> RRScheduler::get_next_thread() {
-    if(Threads.empty())
+    std::stringstream ss;
+    if(threads.empty())
     {
         return nullptr;
     }
     else
     {
-        Thread temp = Threads.front();
-        Threads.pop();
-        return temp;
+        std::shared_ptr<SchedulingDecision> sd = std::make_shared<SchedulingDecision>();
+        sd->thread = threads.front();
+        sd->time_slice = this->time_slice;
+        ss << "Selected from " << this->size() << " threads. Will run for at most " << this->time_slice << " ticks.";
+        threads.pop();
+        sd->explanation = ss.str();
+        return sd;
     }
 }
 
 void RRScheduler::add_to_ready_queue(std::shared_ptr<Thread> thread) {
-    Threads.pop(thread);
+    threads.push(thread);
 }
 
 size_t RRScheduler::size() const {
-    return Threads.size();
+    return threads.size();
 }

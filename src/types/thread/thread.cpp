@@ -52,7 +52,7 @@ int Thread::response_time() const {
 }
 
 int Thread::turnaround_time() const {
-    return this->exit_time - this->start_time;
+    return this->end_time - this->start_time;
 }
 
 void Thread::set_state(ThreadState state, int time) {
@@ -65,8 +65,6 @@ void Thread::set_state(ThreadState state, int time) {
     switch(state)
     {
         case ThreadState::NEW :
-            Thread::set_new(time);
-            break;
         case ThreadState::READY :
             Thread::set_ready(time);
             break;
@@ -95,6 +93,11 @@ std::shared_ptr<Burst> Thread::get_next_burst(BurstType type) {
     }
     else
     {
+        if(bursts.front()->burst_type != type)
+        {
+            throw("No burst type of that type apparently.");
+        }
+        
         return bursts.front();
     }
 }
@@ -102,11 +105,11 @@ std::shared_ptr<Burst> Thread::get_next_burst(BurstType type) {
 std::shared_ptr<Burst> Thread::pop_next_burst(BurstType type) {
     if(bursts.empty())
     {
-        throw("There aren't any bursts to pop loser.\n")
+        throw("There aren't any bursts to pop loser.\n");
     }
-    if(bursts.front().type != type)
+    if(bursts.front()->burst_type != type)
     {
-        throw("There aren't any bursts of that type to pop loser!\n")
+        throw("There aren't any bursts of that type to pop loser!\n");
     }
     else
     {

@@ -21,8 +21,7 @@ public:
     //  Member variables
     //==================================================
 
-    // Add any member variables you may need.
-    std::vector<Thread> Threads;
+    std::queue<std::shared_ptr<Thread>> threads;
 
     //==================================================
     //  Member functions

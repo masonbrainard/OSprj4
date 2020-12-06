@@ -50,7 +50,16 @@ void Logger::print_state_transition(const std::shared_ptr<Event> event, ThreadSt
         Transitioned from NEW to READY
     */
 
-    std::string message = fmt::format("Transitioned from {} to {}", STATE_MAP[before_state], STATE_MAP[after_state]);
+   std::string message;
+
+    if(event->scheduling_decision == nullptr)
+    {
+        message = fmt::format("Transitioned from {} to {}", STATE_MAP[before_state], STATE_MAP[after_state]);
+    }
+    else
+    {
+        message = event->scheduling_decision->explanation;   
+    }
 
     print_verbose(event, event->thread, message);
 }

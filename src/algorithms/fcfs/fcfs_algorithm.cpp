@@ -9,7 +9,6 @@
 /*
     Here is where you should define the logic for the FCFS algorithm.
 */
-std::queue<Thread> Threads;
 
 FCFSScheduler::FCFSScheduler(int slice) {
     if (slice != -1) {
@@ -18,23 +17,26 @@ FCFSScheduler::FCFSScheduler(int slice) {
 }
 
 std::shared_ptr<SchedulingDecision> FCFSScheduler::get_next_thread() {
-    if(Threads.empty())
+    if(threads.empty())
     {
         return nullptr;
     }
     else
     {
-        Thread temp = Threads.front();
-        Threads.pop();
-        return temp;
+        std::shared_ptr<SchedulingDecision> sd = std::make_shared<SchedulingDecision>();
+        sd->thread = threads.front();
+        sd->time_slice = this->time_slice;
+        sd->explanation = "Temp";
+        threads.pop();
+        return sd;
     }
 
 }
 
 void FCFSScheduler::add_to_ready_queue(std::shared_ptr<Thread> thread) {
-    Threads.push(thread);
+    threads.push(thread);
 }
 
 size_t FCFSScheduler::size() const {
-    return Threads.size();
+    return threads.size();
 }

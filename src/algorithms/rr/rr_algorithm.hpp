@@ -23,7 +23,7 @@ public:
     //  Member variables
     //==================================================
 
-    // Add any member variables you may need.
+    std::queue<std::shared_ptr<Thread>> threads;
 
     //==================================================
     //  Member functions

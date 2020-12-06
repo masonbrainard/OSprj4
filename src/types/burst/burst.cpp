@@ -5,7 +5,7 @@
 
 Burst::Burst(BurstType type, int length)
 {
-    this->type = type;
+    this->burst_type = type;
     this->length = length;
 }
 
