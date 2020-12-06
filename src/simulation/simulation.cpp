@@ -100,9 +100,8 @@ void Simulation::handle_thread_arrived(const std::shared_ptr<Event> event)
     //if the cpu is idle, create a new dispatcher invoked event
     if(this->active_thread == nullptr)
     {
-        //std::shared_ptr<SchedulingDecision> sd = 
-        //this->scheduler->get_next_thread();
-        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, event->thread, event->scheduling_decision));
+        std::shared_ptr<SchedulingDecision> sd = this->scheduler->get_next_thread();
+        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, sd->thread, sd));
     }
 }
 
@@ -124,14 +123,12 @@ void Simulation::handle_dispatch_completed(const std::shared_ptr<Event> event)
         {
             //thread completed!
             //event->scheduling_decision->explanation = "Thread completed!";
-            this->system_stats.total_cpu_time += burst->length;
             add_event(std::make_shared<Event>(EventType::THREAD_COMPLETED, event->time + burst->length, ++this->event_num, event->thread, event->scheduling_decision));
         }
         else //this isn't the last burst
         {
             // event->scheduling_decision->explanation = "Cpu burst complete";
             //update total cpu usage
-            this->system_stats.total_cpu_time += burst->length;
             add_event(std::make_shared<Event>(EventType::CPU_BURST_COMPLETED, event->time + burst->length, ++this->event_num, event->thread, event->scheduling_decision));
         }
     } 
@@ -143,7 +140,7 @@ void Simulation::handle_cpu_burst_completed(const std::shared_ptr<Event> event)
     event->thread->set_state(ThreadState::BLOCKED, event->time);
     //get io burst
     auto burst = event->thread->get_next_burst(BurstType::IO);
-    event->thread->pop_next_burst(BurstType::IO);
+    //event->thread->pop_next_burst(BurstType::IO);
     
     //create new io burst completed event and add to queue    
     // event->scheduling_decision->explanation = "IO Burst";
@@ -151,11 +148,10 @@ void Simulation::handle_cpu_burst_completed(const std::shared_ptr<Event> event)
     this->active_thread = nullptr;
     this->add_event(std::make_shared<Event>(EventType::IO_BURST_COMPLETED, event->time + burst->length, ++this->event_num, event->thread, event->scheduling_decision));
 
-    auto nt = this->scheduler->get_next_thread();
+    std::shared_ptr<SchedulingDecision> sd = this->scheduler->get_next_thread();
     //if(this->active_thread;
-    if(nt != nullptr){
-    
-        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, event->thread, event->scheduling_decision));
+    if(sd != nullptr){
+        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, sd->thread, sd));
     }
 }
 
@@ -171,9 +167,8 @@ void Simulation::handle_io_burst_completed(const std::shared_ptr<Event> event)
     //check if the cpu is idle
     if(this->active_thread == nullptr)
     {
-        //create new dispatcher invoked event
-        // event->scheduling_decision->explanation = "IO Burst Complete, Sending to Dispatcher";
-        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time + burst->length, ++this->event_num, event->thread, event->scheduling_decision));
+        std::shared_ptr<SchedulingDecision> sd = this->scheduler->get_next_thread();
+        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, sd->thread, sd));
     }
 }
 
@@ -181,19 +176,31 @@ void Simulation::handle_thread_completed(const std::shared_ptr<Event> event)
 {
     //A thread has finished the last of its CPU bursts.
     event->thread->set_state(ThreadState::EXIT, event->time);
+    
+    //add stats
+    auto avg_response = this->system_stats.avg_thread_response_times[active_thread->priority];
+    auto avg_turnaround = this->system_stats.avg_thread_turnaround_times[active_thread->priority];
+    auto thread_counts = this->system_stats.thread_counts[active_thread->priority];
+
+    this->system_stats.avg_thread_response_times[active_thread->priority] = (avg_response * thread_counts + active_thread->response_time()) / (thread_counts+1);
+    this->system_stats.avg_thread_turnaround_times[active_thread->priority] = (avg_turnaround * thread_counts + active_thread->turnaround_time()) / (thread_counts + 1);
+
+    this->system_stats.thread_counts[active_thread->priority]++;
+    
+    this->system_stats.service_time += event->thread->service_time;
+
     //record cpu time and stuff
-
     this->prev_thread = event->thread;
-
-    //is the cpu idle?
-    // if(this->active_thread == nullptr)
-    // {
-    //     //invoke dispatcher
-    //     // event->scheduling_decision->explanation = "Thread Completed, Sending to Dispatcher";
-    //     this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, event->thread, event->scheduling_decision));
-    // }
-    this->active_thread = nullptr;
-    this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, event->thread, event->scheduling_decision));
+    
+    std::shared_ptr<SchedulingDecision> sd = this->scheduler->get_next_thread();
+    if(sd == nullptr)
+    {
+        this->active_thread = nullptr;
+    }
+    else
+    {
+        this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, sd->thread, sd));
+    }
 }
 
 void Simulation::handle_thread_preempted(const std::shared_ptr<Event> event)
@@ -203,13 +210,13 @@ void Simulation::handle_thread_preempted(const std::shared_ptr<Event> event)
     this->scheduler->add_to_ready_queue(event->thread);
     //get cpu burst and update total cpu time
     auto burst = event->thread->get_next_burst(BurstType::CPU);
-    this->system_stats.total_cpu_time += burst->length - this->scheduler->time_slice;
     burst->update_time(this->scheduler->time_slice);
     //add extra special preemption message
 
     this->prev_thread = event->thread;
     // event->scheduling_decision->explanation = "Thread preempted, returning to dispatcher.";
-    this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, event->thread, event->scheduling_decision));
+    std::shared_ptr<SchedulingDecision> sd = this->scheduler->get_next_thread();
+    this->add_event(std::make_shared<Event>(EventType::DISPATCHER_INVOKED, event->time, ++this->event_num, sd->thread, sd));
 }
 
 void Simulation::handle_dispatcher_invoked(const std::shared_ptr<Event> event)
@@ -221,41 +228,31 @@ void Simulation::handle_dispatcher_invoked(const std::shared_ptr<Event> event)
         //make active thread prev thread
         this->active_thread = this->prev_thread;
     }
-    //get next thread
-    std::shared_ptr<SchedulingDecision> next_thread = this->scheduler->get_next_thread();
-    event->scheduling_decision = next_thread;
-    event->thread = event->scheduling_decision->thread;
+    
+    this->active_thread = event->thread;
 
-    //is there a next thread?
-    if(next_thread == nullptr)
+    if(this->prev_thread != nullptr && this->prev_thread->process_id == this->active_thread->process_id)
     {
-        //set cpu to idle
-        active_thread = nullptr;
+        //update time spent on dispatch
+        this->system_stats.total_time += this->thread_switch_overhead;
+        this->system_stats.dispatch_time += this->thread_switch_overhead;
+        //create a new thread dispatcher event
+        // next_thread->explanation = "Thread dispatched";
+        this->add_event(std::make_shared<Event>(EventType::THREAD_DISPATCH_COMPLETED, event->time + this->thread_switch_overhead, ++this->event_num, event->thread, nullptr));
     }
-    else //oh boy lots of stuff
+    else
     {
-        //make new thread into active thread
-        this->active_thread = next_thread->thread;
-        //is the next thread from the same process?
-        if(this->prev_thread != nullptr && this->prev_thread->process_id == this->active_thread->process_id)
-        {
-            //update time spent on dispatch
-            this->system_stats.total_time += this->thread_switch_overhead;
-            this->system_stats.dispatch_time += this->thread_switch_overhead;
-            //create a new thread dispatcher event
-            // next_thread->explanation = "Thread dispatched";
-            this->add_event(std::make_shared<Event>(EventType::THREAD_DISPATCH_COMPLETED, event->time + this->thread_switch_overhead, ++this->event_num, next_thread->thread, nullptr));
-        }
-        else
-        {
-            //update time spent on dispatch
-            this->system_stats.total_time += this->process_switch_overhead;
-            this->system_stats.dispatch_time += this->process_switch_overhead;
-            //create a new process dispatch event
-            // next_thread->explanation = "Process Dispatched dispatched";
-            this->add_event(std::make_shared<Event>(EventType::PROCESS_DISPATCH_COMPLETED, event->time + this->process_switch_overhead, ++this->event_num, this->active_thread, nullptr));
-        }
-    }  
+        //update time spent on dispatch
+        this->system_stats.total_time += this->process_switch_overhead;
+        this->system_stats.dispatch_time += this->process_switch_overhead;
+        //create a new process dispatch event
+        // next_thread->explanation = "Process Dispatched dispatched";
+        this->add_event(std::make_shared<Event>(EventType::PROCESS_DISPATCH_COMPLETED, event->time + this->process_switch_overhead, ++this->event_num, event->thread, nullptr));
+    }
+    //}  
+    
+    
+
 }
 
 //==============================================================================
@@ -264,10 +261,13 @@ void Simulation::handle_dispatcher_invoked(const std::shared_ptr<Event> event)
 
 SystemStats Simulation::calculate_statistics()
 {
-    // TODO: Implement functionality for calculating the simulation statistics
+    // TODO: Implement functionality for calculating the simulation statistics    
+    this->system_stats.total_cpu_time = this->system_stats.service_time + this->system_stats.dispatch_time;
     //this->system_stats.total_time = this->system_stats.dispatch_time + this->system_stats.service_time + this->system_stats.io_time;
-    //this->system_stats.cpu_utilization = this->system_stats.dispatch_time / this->system_stats.total_time;
-    this->system_stats.cpu_efficiency = this->system_stats.service_time / this->system_stats.total_time;
+    this->system_stats.total_idle_time = this->system_stats.total_time - this->system_stats.total_cpu_time;
+    
+    this->system_stats.cpu_utilization = 100 * ((float)this->system_stats.total_cpu_time / (float)this->system_stats.total_time);
+    this->system_stats.cpu_efficiency = 100 * ((float)this->system_stats.service_time / (float)this->system_stats.total_time);
     return this->system_stats;
 }
 

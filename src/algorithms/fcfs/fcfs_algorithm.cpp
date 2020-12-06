@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream>
 
 #define FMT_HEADER_ONLY
 #include "utilities/fmt/format.h"
@@ -17,6 +18,7 @@ FCFSScheduler::FCFSScheduler(int slice) {
 }
 
 std::shared_ptr<SchedulingDecision> FCFSScheduler::get_next_thread() {
+    std::stringstream ss;
     if(threads.empty())
     {
         return nullptr;
@@ -26,8 +28,9 @@ std::shared_ptr<SchedulingDecision> FCFSScheduler::get_next_thread() {
         std::shared_ptr<SchedulingDecision> sd = std::make_shared<SchedulingDecision>();
         sd->thread = threads.front();
         sd->time_slice = this->time_slice;
-        sd->explanation = "Temp";
+        ss << "Selected from " << this->size() << " threads. Will run to completion of burst.";
         threads.pop();
+        sd->explanation = ss.str();
         return sd;
     }
 

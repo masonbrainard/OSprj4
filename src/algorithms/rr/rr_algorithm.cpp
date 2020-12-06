@@ -10,9 +10,10 @@
 
 RRScheduler::RRScheduler(int slice) {    
     if (slice == -1) {
-        throw("RR must have a timeslice > -1");
-    }  
-    this->time_slice = slice;
+        this->time_slice = 3;
+    } else {
+        this->time_slice = slice;
+    }
 }
 
 std::shared_ptr<SchedulingDecision> RRScheduler::get_next_thread() {

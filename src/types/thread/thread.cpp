@@ -5,10 +5,14 @@
 
 void Thread::set_ready(int time) 
 {
+    //from new
+    if(this->previous_state == ThreadState::NEW)
+    {
+        this->arrival_time = time;
+    }
     //from running
     if(this->previous_state == ThreadState::RUNNING)
     {
-        //time cpu was being utilized
         this->service_time += time - this->state_change_time;
     }
     //from blocked
@@ -21,7 +25,7 @@ void Thread::set_ready(int time)
 
 void Thread::set_running(int time) {  
    //from ready, and the start time hasn't been set
-   if(this->previous_state == ThreadState::READY && this->start_time != -1)
+   if(this->start_time == -1)
    {
        this->start_time = time;
    }
@@ -48,11 +52,11 @@ void Thread::set_finished(int time) {
 }
 
 int Thread::response_time() const {
-    return this->start_time;
+    return this->start_time - this->arrival_time;
 }
 
 int Thread::turnaround_time() const {
-    return this->end_time - this->start_time;
+    return this->end_time - this->arrival_time;
 }
 
 void Thread::set_state(ThreadState state, int time) {
