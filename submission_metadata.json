@@ -1,0 +1,43 @@
+{
+  "deliverables": {
+    "project-submission": {
+      "resubmission-detected": false,
+      "slip-days-spent": 2,
+      "base-checks": [
+        {
+          "warnings": [],
+          "name": "InGitRepo"
+        },
+        {
+          "warnings": [],
+          "name": "RunningOnIsengard"
+        },
+        {
+          "warnings": [
+            "You have untracked files:\n\ndiff.txt\nmy_output\nmy_output.diff\nt1.txt\nvgcore.411605\nvgcore.416538\n\nThese files will not be included in your submission unless you commit them."
+          ],
+          "name": "UntrackedFiles"
+        },
+        {
+          "warnings": [],
+          "name": "UncommittedFiles"
+        },
+        {
+          "warnings": [],
+          "name": "CodeCompiles"
+        }
+      ],
+      "hostname": "isengard.mines.edu",
+      "calc-slip-days": 12,
+      "local-timestamp": 1607230447,
+      "local-due-date": 1606201199,
+      "deliverable-specific-checks": [],
+      "carried-slip-days": 0
+    }
+  },
+  "author-info": {
+    "username": "masonbrainard",
+    "full-name": "Mason Brainard",
+    "cwid": "10740921"
+  }
+}
